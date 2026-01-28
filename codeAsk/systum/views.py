@@ -83,23 +83,37 @@ def downvoteAnswer(request, answer_id):
 @csrf_exempt
 def signupUser(request):
     if request.method == 'POST':
-        data = json.loads(request.body)
-        username = data.get('username')
-        pwd = data.get('password')
-        user = User.objects.create_user(username = username, password = pwd)
-        user.save()
-        return JsonResponse({'message' : 'User created successfully'}, status = 200)
+        try:
+            data = json.loads(request.body)
+            username = data.get('username')
+            pwd = data.get('password')
+
+            if not username or not pwd:
+                return JsonResponse({"error" : "Enter valid username & password"}, status = 400)
+            if User.objects.filter(username = username).exists():
+                return JsonResponse({"error" : "Username already exists, try new one"}, status = 400)
+            User.objects.create_user(username = username, password = pwd)
+            return JsonResponse({"message" : "User created successfully"}, status = 201)
+
+        except Exception as e:
+            return JsonResponse({"error" : str(e)}, status = 500)
+        
+    return JsonResponse({"error" : "Use POST method"}, status = 405)
 
 @csrf_exempt
 def loginUser(request):
     if request.method == 'POST':
-        data = json.loads(request.body)
-        username = data.get('username')
-        pwd = data.get('password')
-        user = authenticate(request, username = username, password = pwd)
+        try:
+            data = json.loads(request.body)
+            username = data.get('username')
+            pwd = data.get('password')
+            user = authenticate(request, username = username, password = pwd)
 
-        if user is not None:
-            login(request, user)
-            return JsonResponse({'message' : 'Logged in successfully', 'username': user.username}, status = 200)
-        else:
-            return JsonResponse({'error' : 'Invalid username password combination'}, status = 401)
+            if user is not None:
+                login(request, user)
+                return JsonResponse({'message' : 'Logged in successfully', 'username': user.username}, status = 200)
+            else:
+                return JsonResponse({'error' : 'Invalid username password combination'}, status = 401)
+        except Exception as e:
+            return JsonResponse({"error" : str(e)}, status = 500)
+    return JsonResponse({"error" : "Use POST method"}, status = 405)
